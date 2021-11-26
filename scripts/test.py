@@ -59,39 +59,36 @@ def test_onnx(args):
 
     elif args.network == "e4e":
         from PIL import Image
-        images = [x.path for x in os.scandir(args.images_path) if x.name.endswith(("png", "jpg", "jpeg"))]
+        image = args.images_path
 
         ort_session_encoder = ort.InferenceSession(args.ckpt_encoder)
         ort_session_decoder = ort.InferenceSession(args.ckpt_decoder)
 
-        for i, image in tqdm(enumerate(images), desc="stylegan2 generating..."):
-            if args.align:
-                im = detect_and_align_face(image)
-            else:
-                im = Image.open(image)
+    
+        if args.align:
+            im = detect_and_align_face(image)
+        else:
+            im = Image.open(image)
 
-            img = (np.array(im).transpose((2, 0, 1)) - 127.5) / 127.5
-            img = np.expand_dims(img, 0).astype(np.float32)
+        img = (np.array(im).transpose((2, 0, 1)) - 127.5) / 127.5
+        img = np.expand_dims(img, 0).astype(np.float32)
 
-            dlatents = ort_session_encoder.run([ort_session_encoder.get_outputs()[0].name],
-                                               {ort_session_encoder.get_inputs()[0].name: img})[0]
+        dlatents = ort_session_encoder.run([ort_session_encoder.get_outputs()[0].name],
+                                            {ort_session_encoder.get_inputs()[0].name: img})[0]
 
-            if args.edit:
-                edit_direction = np.load(args.edit_direction)
-                dlatents += edit_direction * args.edit_alpha
+        if args.edit:
+            edit_direction = np.load(args.edit_direction)
+            dlatents += edit_direction * args.edit_alpha
 
-            output = ort_session_decoder.run([ort_session_decoder.get_outputs()[0].name],
-                                             {ort_session_decoder.get_inputs()[0].name: dlatents})[0]
+        output = ort_session_decoder.run([ort_session_decoder.get_outputs()[0].name],
+                                            {ort_session_decoder.get_inputs()[0].name: dlatents})[0]
 
-            output = (output.squeeze().transpose((1, 2, 0)) + 1) / 2
-            output[output < 0] = 0
-            output[output > 1] = 1
-            output = normalization(output) * 255
-            output = Image.fromarray(output.astype('uint8'))
-            output.save(os.path.join(args.save, "{}_{}_{}.png".format(
-                args.network,
-                args.platform,
-                image.split("/")[-1].split(".")[0])))
+        output = (output.squeeze().transpose((1, 2, 0)) + 1) / 2
+        output[output < 0] = 0
+        output[output > 1] = 1
+        output = normalization(output) * 255
+        output = Image.fromarray(output.astype('uint8'))
+        output.save("out.png")
 
     else:
         print("network:{} not support, only support stylegan2、psp or e4e.".format(args.network))
@@ -343,7 +340,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--save",
         type=str,
-        default="./sample",
+        default="./sample2",
         help="path to save the result",
     )
 
