@@ -60,9 +60,6 @@ def test_onnx(args):
     elif args.network == "e4e":
         from PIL import Image
         image = args.images_path
-        
-        options = ort.SessionOptions()
-        options.intra_op_num_threads = 16
 
         ort_session_encoder = ort.InferenceSession(args.ckpt_encoder)
         ort_session_decoder = ort.InferenceSession(args.ckpt_decoder)
@@ -253,7 +250,7 @@ def test_torch(args):
         from tools.common import trans
         from collections import OrderedDict
 
-        images = [x.path for x in os.scandir(args.images_path) if x.name.endswith(("png", "jpg", "jpeg"))]
+        image = args.images_path
 
         ckpt = torch.load(args.ckpt, map_location='cpu')
         encoder = Encoder4EditingMobileNet()
@@ -275,25 +272,21 @@ def test_torch(args):
         encoder.eval()
         decoder.eval()
 
-        for i, image in tqdm(enumerate(images), desc="stylegan2 generating..."):
-            if args.align:
-                im = detect_and_align_face(image)
-            else:
-                im = Image.open(image)
+        if args.align:
+            im = detect_and_align_face(image)
+        else:
+            im = Image.open(image)
 
-            dlatents = encoder(trans(im).unsqueeze(0))
-            img = decoder(dlatents).squeeze(0)
+        dlatents = encoder(trans(im).unsqueeze(0))
+        img = decoder(dlatents).squeeze(0)
 
-            utils.save_image(
-                img,
-                os.path.join(args.save, "{}_{}_{}.png".format(
-                    args.network,
-                    args.platform,
-                    image.split("/")[-1].split(".")[0])),
-                nrow=1,
-                normalize=True,
-                range=(-1, 1),
-            )
+        utils.save_image(
+            img,
+            "out.png",
+            nrow=1,
+            normalize=True,
+            range=(-1, 1),
+        )
     else:
         print("network:{} not support, only support stylegan2、psp or e4e.".format(args.network))
 
