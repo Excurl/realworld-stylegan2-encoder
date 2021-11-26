@@ -60,6 +60,9 @@ def test_onnx(args):
     elif args.network == "e4e":
         from PIL import Image
         image = args.images_path
+        
+        options = ort.SessionOptions()
+        options.intra_op_num_threads = 16
 
         ort_session_encoder = ort.InferenceSession(args.ckpt_encoder)
         ort_session_decoder = ort.InferenceSession(args.ckpt_decoder)
