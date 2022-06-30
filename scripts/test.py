@@ -86,7 +86,7 @@ def test_onnx(args):
         output = (output.squeeze().transpose((1, 2, 0)) + 1) / 2
         output[output < 0] = 0
         output[output > 1] = 1
-        output = normalization(output) * 255
+        output = normalization(output) * 1024
         output = Image.fromarray(output.astype('uint8'))
         output.save("out.png")
 
